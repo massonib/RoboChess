@@ -14,6 +14,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.IO;
 using RoboChess.Helpers;
+using System.Diagnostics;
 
 namespace RoboChess
 {
@@ -27,6 +28,18 @@ namespace RoboChess
             set => Set(ref _canStartGame, value);
         }
 
+        private void AddMove(Move move)
+        {
+            Moves.Append(" " + move.Text);
+            GameMoves = Moves.ToString();
+        }
+
+        private void AddMove(string move)
+        {
+            Moves.Append(" " + move);
+            GameMoves = Moves.ToString();
+        }
+
         private string _gameMoves;
         public string GameMoves
         {
@@ -38,11 +51,7 @@ namespace RoboChess
         public StringBuilder Moves
         {
             get => _moves;
-            set
-            {
-                Set(ref _moves, value);
-                GameMoves = Moves.ToString();
-            }
+            set => Set(ref _moves, value);
         }
 
         private bool _isPlayerMove;
@@ -158,7 +167,8 @@ namespace RoboChess
             numPlayerPiecesTaken = 0;
 
             BoardItems = Chess.BoardSetup();
-            if (Moves.Length > 0) Moves.Clear();
+            Moves.Clear();
+            GameMoves = Moves.ToString();
             if (CheckMate) CheckMate = false;
 
             // if (IsEngineThinking) IsEngineThinking = false;
@@ -171,6 +181,11 @@ namespace RoboChess
                 NewMessage("Setup", "After the board has been reset, press OK.");
                 WaitForMessageToClose();
             }
+
+            OpenGripper();
+            ResetRobot();
+            Task.Delay(500).Wait();
+            ResetCamera();
 
             //This boolean controls whose turn it is. It also triggers events.
             IsPlayerMove = PlayerIsWhite;
@@ -194,7 +209,8 @@ namespace RoboChess
             numPlayerPiecesTaken = 0;
 
             BoardItems = Chess.BoardSetup();
-            if (Moves.Length > 0) Moves.Clear();
+            Moves.Clear();
+            GameMoves = Moves.ToString();
             if (CheckMate) CheckMate = false;
             engine.SendCommand(UciCommands.ucinewgame);
             engine.SendCommand(UciCommands.limitStrength);
@@ -203,7 +219,7 @@ namespace RoboChess
             var playerTurn = PlayerIsWhite;
             foreach(var stringMove in moves)
             {
-                Moves.Append(" " + stringMove);
+                AddMove(stringMove);
                 var move = new Move(stringMove);
                 var selectedPiece = GetPieceAt(move.From);
                 var targetPiece = GetPieceAt(move.To);
@@ -227,6 +243,11 @@ namespace RoboChess
                 NewMessage("Setup", "After the board has been reset, press OK.");
                 WaitForMessageToClose();
             }
+
+            OpenGripper();
+            ResetRobot();
+            Task.Delay(500).Wait();
+            ResetCamera();
 
             IsPlayerMove = playerTurn;
         }
@@ -253,7 +274,7 @@ namespace RoboChess
                     if (IsPlayerMove)
                     {
                         //Player move is valid
-                        Moves.Append(" " + PlayerMove);
+                        AddMove(PlayerMove);
                         var playerMove = new Move(PlayerMove);
                         selectedPiece = GetPieceAt(playerMove.From);
                         var targetPiece = GetPieceAt(playerMove.To);                   
@@ -270,12 +291,11 @@ namespace RoboChess
                     else // Engine move
                     {
                         var targetPiece = GetPieceAt(move.To);
-                        Moves.Append(" " + move.Text);
+                        AddMove(move);
                         if (targetPiece != null)
                         {
                             Chess.CapturePiece(selectedPiece, targetPiece, BoardItems);
                             CapturePiece(move);
-                            ResetRobot();
                         }
                         else
                         {
@@ -300,8 +320,8 @@ namespace RoboChess
                                     EnPassant(move);                                   
                                     break;                             
                             }
-                            ResetRobot();
                         }
+                        ResetRobot();
                         //Give half a second before taking the new image.
                         Task.Delay(500).Wait();
                         ResetCamera();
@@ -319,12 +339,12 @@ namespace RoboChess
 
         private void DeeperMoveAnalysis()
         {
-            SendMovesToEngine(GameMoves, deepAnalysisTime);
+            SendMovesToEngine(Moves.ToString(), deepAnalysisTime);
         }
 
         private void SendMoveToEngine(string move)
         {
-            SendMovesToEngine(GameMoves + " " + move, moveValidationTime);
+            SendMovesToEngine(Moves.ToString() + " " + move, moveValidationTime);
         }
 
         private void SendMovesToEngine(string moves, short time)
@@ -447,12 +467,13 @@ namespace RoboChess
         private void ResetServer()
         {
             Server.Stop();
-            exitAllThreads = true; //will be reverted once a new game has started
+            exitAllThreads = true; 
             Task.Delay(1000).Wait();
             if(Robot != null) Robot.Close();
             if(Camera != null) Camera.Close();
             SetupTCP();
             UpdateConnectionStatus();
+            exitAllThreads = false;
         }
 
         private void accept_connection()
@@ -498,18 +519,16 @@ namespace RoboChess
                 Camera = client;
                 CameraReader = reader;
                 CameraWriter = writer;
-                CameraConnected = true;
+                Task.Run(() => ListenToCamera());
                 UpdateConnectionStatus();
-                ListenToCamera();
             }
             else if (message.Contains("R,"))
             {
                 Robot = client;
                 RobotReader = reader;
                 RobotWriter = writer;
-                RobotConnected = true;
-                UpdateConnectionStatus();
-                ListenToRobot();
+                Task.Run(() => ListenToRobot());
+                UpdateConnectionStatus();              
             }
         }
 
@@ -686,14 +705,13 @@ namespace RoboChess
                 if (inputs[1])
                 {
                     var moves = GameMoves.Trim().Split();
-                    moves.Take(moves.Length - 2); //Remove the last two moves (engine and player)
-                    Task.Run(() => LoadGameFrom(moves));
+                    var reduced = moves.Take(moves.Length - 2).ToArray(); //Remove the last two moves (engine and player)
+                    Task.Run(() => LoadGameFrom(reduced));
                     return;
                 }
                 if (inputs[2])
                 {
                     ResetCamera();
-                    ResetRobot();
                 }
             }
         }
@@ -833,14 +851,20 @@ namespace RoboChess
         private void ResetRobot()
         {
             RobotIsMoving = true;
+            RobotWriter.Flush();
             RobotWriter.WriteLine("0");
             WaitForRobot();
         }
 
+        private int robotsLongestSingleMoveInSeconds = 10;
         private bool RobotIsMoving = false;
         private void WaitForRobot()
         {
-            while (RobotIsMoving && !exitAllThreads) { } //wait
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+            while (RobotIsMoving && !exitAllThreads && stopWatch.Elapsed.TotalSeconds < robotsLongestSingleMoveInSeconds) { } //wait
+            if(stopWatch.Elapsed.TotalSeconds >= robotsLongestSingleMoveInSeconds) RobotIsMoving = false;
+
         }
         #endregion
     }

@@ -70,6 +70,7 @@ namespace StockChessCS.Helpers
         public static void MovePiece(ChessPiece selectedPiece, BoardSquare selectedSquare,
             MultiThreadedObservableCollection<IBoardItem> items, out MoveType moveType)
         {
+            moveType = MoveType.Standard;
             switch (selectedPiece.Piece)
             {
                 case PieceType.King:
@@ -78,8 +79,7 @@ namespace StockChessCS.Helpers
                 case PieceType.Pawn:
                     PawnMove(selectedPiece, selectedSquare, items, out moveType);
                     break;
-                default:
-                    moveType = MoveType.Standard;
+                default:                   
                     Move(selectedPiece, selectedSquare);
                     break;
             }
@@ -128,12 +128,18 @@ namespace StockChessCS.Helpers
             switch (piece.Color)
             {   
                 case PieceColor.Black:
-                    moveType = MoveType.Promotion;
-                    if (piece.Rank == 1) piece.Piece = PieceType.Queen;
+                    if (piece.Rank == 1)
+                    {
+                        piece.Piece = PieceType.Queen;
+                        moveType = MoveType.Promotion;
+                    }
                     break;
                 case PieceColor.White:
-                    moveType = MoveType.Promotion;
-                    if (piece.Rank == 8) piece.Piece = PieceType.Queen;
+                    if (piece.Rank == 8)
+                    {
+                        piece.Piece = PieceType.Queen;
+                        moveType = MoveType.Promotion;
+                    }
                     break;
             }
             // En passant
