@@ -1,0 +1,24 @@
+﻿<Application x:Class="RoboChess.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:RoboChess.Converters"
+             xmlns:helpers="clr-namespace:RoboChess.Helpers"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                
+                <!-- MahApps resources-->
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Colors.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Crimson.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/BaseDark.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:NegatingBooleanConverter x:Key="negatingBooleanConverter" />
+            <converters:BooleanColorConverter x:Key="booleanColorConverter" />
+            <converters:VisibilityBooleanConverter x:Key="visibilityBooleanConverter" />
+            <helpers:ViewModelLocator x:Key="VMLocator"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
