@@ -125,7 +125,7 @@ namespace RoboChess
         public ICommand ResetServerCommand { get; }
         public ICommand NewGameCommand { get; }
         public ICommand LoadGameCommand { get; }
-        public ICommand CloseErrorMessageCommand { get; }
+        public ICommand CloseMessageCommand { get; }
         #endregion
 
         #region Constructor
@@ -144,46 +144,55 @@ namespace RoboChess
             ResetServerCommand = new CommandWithNoCondition(ResetServer);
             NewGameCommand = new CommandWithNoCondition(NewGame);
             LoadGameCommand = new CommandWithNoCondition(LoadGame);
-            CloseErrorMessageCommand = new CommandWithNoCondition(CloseErrorMessage);
+            CloseMessageCommand = new CommandWithNoCondition(CloseMessage);
         }
         #endregion
 
         #region NewGame
-        private void NewGame()
+
+        private void NewGameAsync()
         {
             exitAllThreads = true;
             Task.Delay(1000).Wait();
             exitAllThreads = false;
-            fileOffset = 0;
-            rankOffset = 0;
+            numPlayerPiecesTaken = 0;
 
             BoardItems = Chess.BoardSetup();
             if (Moves.Length > 0) Moves.Clear();
             if (CheckMate) CheckMate = false;
-      
-           // if (IsEngineThinking) IsEngineThinking = false;
+
+            // if (IsEngineThinking) IsEngineThinking = false;
             engine.SendCommand(UciCommands.ucinewgame);
             engine.SendCommand(UciCommands.limitStrength);
             engine.SendCommand(UciCommands.SetElo(Elo));
+
+            if (!PlayerIsWhite)
+            {
+                NewMessage("Setup", "After the board has been reset, press OK.");
+                WaitForMessageToClose();
+            }
 
             //This boolean controls whose turn it is. It also triggers events.
             IsPlayerMove = PlayerIsWhite;
         }
 
-        private void LoadGame()
+        private void NewGame()
         {
-            LoadGameFrom(Moves.ToString());
+            Task.Run(() => NewGameAsync());
         }
 
-        private void LoadGameFrom(string gameMoves)
+        private void LoadGame()
+        {
+            LoadGameFrom(GameMoves.Trim().Split());
+        }
+
+        private void LoadGameFrom(string[] moves)
         {
             exitAllThreads = true;
             Task.Delay(1000).Wait();
             exitAllThreads = false;
-            fileOffset = 0;
-            rankOffset = 0;
+            numPlayerPiecesTaken = 0;
 
-            var moves = gameMoves.Trim().Split();
             BoardItems = Chess.BoardSetup();
             if (Moves.Length > 0) Moves.Clear();
             if (CheckMate) CheckMate = false;
@@ -198,11 +207,27 @@ namespace RoboChess
                 var move = new Move(stringMove);
                 var selectedPiece = GetPieceAt(move.From);
                 var targetPiece = GetPieceAt(move.To);
-              
-                if (targetPiece != null) Chess.CapturePiece(selectedPiece, targetPiece, BoardItems);
-                else Chess.MovePiece(selectedPiece, GetSquareAt(move.To), BoardItems);
+
+                if (targetPiece != null)
+                {
+                    Chess.CapturePiece(selectedPiece, targetPiece, BoardItems);
+                    if (!playerTurn) numPlayerPiecesTaken++;
+                }
+                else
+                {
+                    Chess.MovePiece(selectedPiece, GetSquareAt(move.To), BoardItems, out var moveType);
+                    if (!playerTurn && moveType == MoveType.EnPassant) numPlayerPiecesTaken++;
+                }
+
                 playerTurn = !playerTurn;
             }
+
+            if (!playerTurn)
+            {
+                NewMessage("Setup", "After the board has been reset, press OK.");
+                WaitForMessageToClose();
+            }
+
             IsPlayerMove = playerTurn;
         }
         #endregion
@@ -224,8 +249,7 @@ namespace RoboChess
                     IllegalPlayerMove();
                 }
                 else
-                {
-                    
+                {                   
                     if (IsPlayerMove)
                     {
                         //Player move is valid
@@ -240,7 +264,7 @@ namespace RoboChess
                         else
                         {
                             //Check if player wants to capture a piece or just move
-                            Chess.MovePiece(selectedPiece, GetSquareAt(playerMove.To), BoardItems);                       
+                            Chess.MovePiece(selectedPiece, GetSquareAt(playerMove.To), BoardItems, out _);                       
                         }
                     }
                     else // Engine move
@@ -251,11 +275,32 @@ namespace RoboChess
                         {
                             Chess.CapturePiece(selectedPiece, targetPiece, BoardItems);
                             CapturePiece(move);
+                            ResetRobot();
                         }
                         else
                         {
-                            Chess.MovePiece(selectedPiece, GetSquareAt(move.To), BoardItems);
-                            MovePiece(move);
+                            Chess.MovePiece(selectedPiece, GetSquareAt(move.To), BoardItems, out var moveType);
+                            switch (moveType)
+                            {
+                                case MoveType.Standard:
+                                    MovePiece(move);
+                                    break;
+                                case MoveType.ShortCastle:
+                                    MovePiece(move);
+                                    MovePiece(new Move("h" + move.From.Rank + "f" + move.From.Rank));
+                                    break;
+                                case MoveType.LongCastle:
+                                    MovePiece(move);
+                                    MovePiece(new Move("a" + move.From.Rank + "d" + move.From.Rank));
+                                    break;
+                                case MoveType.Promotion:
+                                    Promotion(move);
+                                    break;
+                                case MoveType.EnPassant:
+                                    EnPassant(move);                                   
+                                    break;                             
+                            }
+                            ResetRobot();
                         }
                         //Give half a second before taking the new image.
                         Task.Delay(500).Wait();
@@ -268,7 +313,7 @@ namespace RoboChess
 
         private void IllegalPlayerMove()
         {
-            ErrorMessage = "Illegal player move. Please (1) replace the pieces, (2) press the camera reset button, (3) and make a new move.";
+            NewMessage("Illegal Player Move", "Please (1) replace the pieces, (2) press the camera reset button, (3) and make a new move.");
             Task.Run(() => WaitForPlayer());
         }
 
@@ -300,6 +345,47 @@ namespace RoboChess
         {
             return BoardItems.OfType<BoardSquare>().
                             Where(p => p.Rank == position.Rank && p.File == position.File).FirstOrDefault();
+        }
+        #endregion
+
+        #region Message Control
+        private bool _MessageOpen;
+        public bool MessageOpen
+
+        {
+            get => _MessageOpen;
+            set => Set(ref _MessageOpen, value);
+        }
+
+        private string _message;
+        public string Message
+        {
+            get => _message;
+            set => Set(ref _message, value);
+        }
+
+        private string _messageHeader;
+        public string MessageHeader
+        {
+            get => _messageHeader;
+            set => Set(ref _messageHeader, value);
+        }
+
+        private void NewMessage(string header, string message)
+        {
+            Message = message;
+            MessageHeader = header;
+            MessageOpen = true;
+        }
+
+        private void CloseMessage()
+        {
+            MessageOpen = false;
+        }
+
+        private void WaitForMessageToClose()
+        {
+            while (MessageOpen) { }; //wait
         }
         #endregion
 
@@ -338,32 +424,7 @@ namespace RoboChess
             RobotConnected = Robot != null && Robot.Connected;
             CanStartGame = CameraConnected && RobotConnected;
             if (CanStartGame) NewGame();
-        }
-
-        private bool _errorMessageOpen;
-        public bool ErrorMessageOpen
-
-        {
-            get => _errorMessageOpen;
-            set => Set(ref _errorMessageOpen, value);
-        }
-
-        private void CloseErrorMessage()
-        {
-            ErrorMessageOpen = false;
-        }
-
-        private string _errorMessage;
-        public string ErrorMessage
-        {
-            get => _errorMessage;
-            set
-            {
-                //Anytime there is a new error message, open the message
-                Set(ref _errorMessage, value);
-                ErrorMessageOpen = true;
-            }
-        }
+        }   
 
         public TcpListener Server;
         public TcpClient Robot;
@@ -386,28 +447,47 @@ namespace RoboChess
         private void ResetServer()
         {
             Server.Stop();
+            exitAllThreads = true; //will be reverted once a new game has started
+            Task.Delay(1000).Wait();
+            if(Robot != null) Robot.Close();
+            if(Camera != null) Camera.Close();
             SetupTCP();
+            UpdateConnectionStatus();
         }
 
         private void accept_connection()
         {
-            Server.BeginAcceptTcpClient(handle_connection, Server);  //this is called asynchronously and will run in a different thread
+            try
+            {
+                Server.BeginAcceptTcpClient(handle_connection, Server);  //this is called asynchronously and will run in a different thread
+            }
+            catch
+            {
+                //The server was likely reset
+            }
         }
 
         private void handle_connection(IAsyncResult result)  //the parameter is a delegate, used to communicate between threads
         {
-            accept_connection();  //once again, checking for any other incoming connections
-            TcpClient client = Server.EndAcceptTcpClient(result);  //creates the TcpClient
-            NetworkStream ns = client.GetStream();
-            StreamWriter writer = new StreamWriter(ns) { AutoFlush = true };
-            var reader = new StreamReader(ns);
+            try
+            {
+                accept_connection();  //once again, checking for any other incoming connections
+                TcpClient client = Server.EndAcceptTcpClient(result);  //creates the TcpClient
+                NetworkStream ns = client.GetStream();
+                StreamWriter writer = new StreamWriter(ns) { AutoFlush = true };
+                var reader = new StreamReader(ns);
 
-            //Start listening for the client
-            Task.Run(() => ListenForInitialResponse(client, reader, writer));
+                //Start listening for the client
+                Task.Run(() => ListenForInitialResponse(client, reader, writer));
 
-            //Write the 
-            Task.Delay(1000).Wait();
-            ResetCamera();
+                //Write the 
+                Task.Delay(1000).Wait();
+                writer.WriteLine("0"); //Initialize the client to get its name
+            }
+            catch
+            {
+                //The server was likely reset
+            }
         }
 
         private void ListenForInitialResponse(TcpClient client, StreamReader reader, StreamWriter writer)
@@ -437,7 +517,16 @@ namespace RoboChess
         {
             while (!exitAllThreads)
             {
-                var message = CameraReader.ReadLine();
+                string message = "";
+                try
+                {
+                    message = CameraReader.ReadLine();
+                }
+                catch
+                {
+                    //camera read error or the connection was reset
+                    continue;
+                }
 
                 var m = 0;
                 var partialMoves = new List<PartialMove>();
@@ -490,7 +579,7 @@ namespace RoboChess
                 }
                 else
                 {
-                    ErrorMessage = "Camera could not identify player move. Please (1) reset the pieces, (2) press the yellow reset button, and (3) make the move again.";
+                    NewMessage("Camera Error", "Camera could not identify player move. Please (1) reset the pieces, (2) press the yellow reset button, and (3) make the move again.");
                     IsPlayerMove = true;
                 }
             }
@@ -505,7 +594,16 @@ namespace RoboChess
         {
             while (!exitAllThreads)
             {
-                var message = RobotReader.ReadLine();
+                string message = "";
+                try
+                {
+                    message = RobotReader.ReadLine();
+                }
+                catch
+                {
+                    //Robot read error or the connection was reset
+                    continue;
+                }
 
                 if (message.Contains("completed")) RobotIsMoving = false;
             }
@@ -566,9 +664,19 @@ namespace RoboChess
             //Update the lights to be the player's turn
             while (!exitAllThreads)
             {
-                ModbusClient.Connect();
-                var inputs = ModbusClient.ReadDiscreteInputs(0, 3);
-                ModbusClient.Disconnect();
+                bool[] inputs;
+                try
+                {
+                    ModbusClient.Connect();
+                    inputs = ModbusClient.ReadDiscreteInputs(0, 3);
+                    ModbusClient.Disconnect();
+                }
+                catch
+                {
+                    //connection error or the connection has been reset
+                    continue;
+                }
+  
                 if (inputs[0])
                 {
                     //Trigger the camera. The camera will then send the move to the engine.
@@ -577,7 +685,9 @@ namespace RoboChess
                 }
                 if (inputs[1])
                 {
-                    Task.Run(() => LoadGameFrom(GameMoves));
+                    var moves = GameMoves.Trim().Split();
+                    moves.Take(moves.Length - 2); //Remove the last two moves (engine and player)
+                    Task.Run(() => LoadGameFrom(moves));
                     return;
                 }
                 if (inputs[2])
@@ -604,23 +714,24 @@ namespace RoboChess
 
         public void MovePiece(Move move)
         {
-            PickupPiece(move.From);
-            DropOffPiece(move.To);
-            ResetRobot();
+            MoveRobot(move.From);
+            PickupPiece();
+            MoveRobot(move.To);
+            DropOffPiece();
         }
 
         public void CapturePiece(Move move)
         {
-            PickupPiece(move.To);
+            //Remove the captured piece
+            MoveRobot(move.To);
+            PickupPiece();
             DropOffTakenPiece();
+            //And then move the engine piece
             MovePiece(move);
-            ResetRobot();
         }
 
-        private void DropOffPiece(PartialMove move)
+        private void DropOffPiece()
         {
-            //Move the arm to the to location
-            MoveRobot(move);
             LowerArm();
             OpenGripper();
             RaiseArm();
@@ -635,20 +746,53 @@ namespace RoboChess
             RaiseArm();
         }
 
-        private void PickupPiece(PartialMove move)
+        private void PickupPiece()
         {
-            //Move the arm to the from location
-            MoveRobot(move);
             OpenGripper();//Technically, it should already be open
             LowerArm();
             CloseGripper();
             RaiseArm();
         }
 
+        private void Promotion(Move move)
+        {
+            //Move the queen to the move.To position
+            MoveRobotToExtraQueenPosition();
+            PickupPiece();
+            MoveRobot(move.To);
+            DropOffPiece();
+
+            //Now move the pawn off the board over to the queen position
+            MoveRobot(move.From);
+            PickupPiece();
+            MoveRobotToExtraQueenPosition();
+            DropOffPiece();
+        }
+
+        private void EnPassant(Move move)
+        {
+            //move the engine's pawn
+            MovePiece(move);
+
+            //then remove the captured pawn                            
+            var rankAdjustment = PlayerIsWhite ? 1 : -1;
+            var capturedPawnLocation = new PartialMove(move.To.File + (move.From.Rank + rankAdjustment).ToString());
+            MoveRobot(capturedPawnLocation);
+            PickupPiece();
+            DropOffTakenPiece();
+        }
+
         private void MoveRobot(PartialMove move)
         {
             RobotIsMoving = true;
             RobotWriter.WriteLine("1," + FileDictionary[move.File] + "," + (move.Rank - 1).ToString());
+            WaitForRobot();
+        }
+
+        private void MoveRobotToExtraQueenPosition()
+        {
+            RobotIsMoving = true;
+            RobotWriter.WriteLine("5");
             WaitForRobot();
         }
 
@@ -666,19 +810,24 @@ namespace RoboChess
             WaitForRobot();
         }
 
-        private int fileOffset = 0;
-        private int rankOffset = 0;
+        private int numPlayerPiecesTaken = 0;
         private void GoToCapturedPieces()
         {
+            numPlayerPiecesTaken++;
+            int rankOffset, fileOffset;
+            if (numPlayerPiecesTaken < 9)
+            {
+                rankOffset = numPlayerPiecesTaken - 1;
+                fileOffset = 0;
+            }
+            else
+            {
+                rankOffset = numPlayerPiecesTaken - 8 - 1;
+                fileOffset = 1;
+            }
             RobotIsMoving = true;
             RobotWriter.WriteLine("4," + fileOffset.ToString() + "," + rankOffset.ToString());
             WaitForRobot();
-            rankOffset++;
-            if (rankOffset == 8)
-            {
-                rankOffset = 0;
-                fileOffset++;
-            }
         }
 
         private void ResetRobot()

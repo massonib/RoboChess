@@ -9,4 +9,13 @@
         Rook,
         Pawn
     }
+
+    public enum MoveType
+    {    
+        Standard,
+        ShortCastle,
+        LongCastle,
+        Promotion,
+        EnPassant
+    }
 }

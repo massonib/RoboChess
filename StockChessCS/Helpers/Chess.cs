@@ -68,17 +68,18 @@ namespace StockChessCS.Helpers
         }        
 
         public static void MovePiece(ChessPiece selectedPiece, BoardSquare selectedSquare,
-            MultiThreadedObservableCollection<IBoardItem> items)
+            MultiThreadedObservableCollection<IBoardItem> items, out MoveType moveType)
         {
             switch (selectedPiece.Piece)
             {
                 case PieceType.King:
-                    KingMove(selectedPiece, selectedSquare, items);
+                    KingMove(selectedPiece, selectedSquare, items, out moveType);
                     break;
                 case PieceType.Pawn:
-                    PawnMove(selectedPiece, selectedSquare, items);
+                    PawnMove(selectedPiece, selectedSquare, items, out moveType);
                     break;
                 default:
+                    moveType = MoveType.Standard;
                     Move(selectedPiece, selectedSquare);
                     break;
             }
@@ -90,10 +91,12 @@ namespace StockChessCS.Helpers
             piece.File = square.File;
         }
 
-        private static void KingMove(ChessPiece piece, BoardSquare targetSquare, MultiThreadedObservableCollection<IBoardItem> items)
+        private static void KingMove(ChessPiece piece, BoardSquare targetSquare, MultiThreadedObservableCollection<IBoardItem> items,
+            out MoveType moveType)
         {            
             if (piece.File == 'e' && targetSquare.File == 'g') // Short castle
             {
+                moveType = MoveType.ShortCastle;
                 var rook = items.OfType<ChessPiece>().Where(p => p.Color == piece.Color &&
                 p.Piece == PieceType.Rook && p.File == 'h').FirstOrDefault();
 
@@ -102,30 +105,41 @@ namespace StockChessCS.Helpers
             }
             else if (piece.File == 'e' && targetSquare.File == 'c') // Long castle
             {
+                moveType = MoveType.LongCastle;
                 var rook = items.OfType<ChessPiece>().Where(p => p.Color == piece.Color &&
                 p.Piece == PieceType.Rook && p.File == 'a').FirstOrDefault();
 
                 piece.File = 'c';
                 rook.File = 'd';
             }
-            else { Move(piece, targetSquare); }
+            else 
+            {
+                moveType = MoveType.Standard;
+                Move(piece, targetSquare); 
+            }
         }
 
-        private static void PawnMove(ChessPiece piece, BoardSquare targetSquare, MultiThreadedObservableCollection<IBoardItem> items)
+        private static void PawnMove(ChessPiece piece, BoardSquare targetSquare, MultiThreadedObservableCollection<IBoardItem> items, 
+            out MoveType moveType)
         {
+            moveType = MoveType.Standard;
+
             // Promotion
             switch (piece.Color)
-            {
+            {   
                 case PieceColor.Black:
+                    moveType = MoveType.Promotion;
                     if (piece.Rank == 1) piece.Piece = PieceType.Queen;
                     break;
-                case PieceColor.White:                    
+                case PieceColor.White:
+                    moveType = MoveType.Promotion;
                     if (piece.Rank == 8) piece.Piece = PieceType.Queen;
                     break;
             }
             // En passant
             if (piece.File != targetSquare.File)
             {
+                moveType = MoveType.EnPassant;
                 var opponentPawn = items.OfType<ChessPiece>().Where(p => p.Color != piece.Color &&
                 p.Piece == PieceType.Pawn && p.Rank == piece.Rank && p.File == targetSquare.File).FirstOrDefault();
 

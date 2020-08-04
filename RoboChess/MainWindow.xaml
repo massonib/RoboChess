@@ -85,10 +85,10 @@
                     </MenuItem.Icon>
 
                     <MenuItem Name="WhiteMenuItem" Header="White" IsCheckable="True" IsChecked="{Binding PlayerIsWhite, Mode=TwoWay}"
-                          Checked="FlipBoard" Command="{Binding ChangePlayerColorCommand}"/>
+                          Checked="FlipBoard" Command="{Binding ChangePlayerColorCommand}" IsEnabled="{Binding CanStartGame}"/>
                     <MenuItem Name="BlackMenuItem" Header="Black" IsCheckable="True" 
                            IsChecked="{Binding PlayerIsWhite, Mode=TwoWay, Converter={StaticResource negatingBooleanConverter}}"
-                           Checked="FlipBoard" Command="{Binding ChangePlayerColorCommand}"/>
+                           Checked="FlipBoard" Command="{Binding ChangePlayerColorCommand}" IsEnabled="{Binding CanStartGame}"/>
                 </MenuItem>
             </Menu>
 
@@ -124,7 +124,7 @@
 
                 </StackPanel>
                 <ScrollViewer Canvas.Left="12" Canvas.Top="12" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" h:AutoScrollBehavior.AutoScroll="True">
-                    <TextBox TextWrapping="Wrap" Text="{Binding Moves, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                    <TextBox TextWrapping="Wrap" Text="{Binding GameMoves, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 </ScrollViewer>
                 <Label Content="Log" Grid.Row="0" Grid.Column="1"/>
                 <ScrollViewer Canvas.Left="12" Canvas.Top="12" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" h:AutoScrollBehavior.AutoScroll="True">
@@ -133,6 +133,6 @@
             </Grid>
         </Grid>
 
-        <local:MessageControl x:Name="messageControl"  Visibility="{Binding ErrorMessageOpen, Converter={StaticResource visibilityBooleanConverter}}" />
+        <local:MessageControl x:Name="messageControl"  Visibility="{Binding MessageOpen, Converter={StaticResource visibilityBooleanConverter}}" />
     </Grid>
 </Window>

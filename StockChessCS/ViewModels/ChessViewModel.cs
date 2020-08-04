@@ -189,7 +189,7 @@ namespace StockChessCS.ViewModels
                 {
                     if (playerWantsToMovePiece)
                     {
-                        ctxTaskFactory.StartNew(() => Chess.MovePiece(selectedPiece, targetSquare, BoardItems)).Wait();                        
+                        ctxTaskFactory.StartNew(() => Chess.MovePiece(selectedPiece, targetSquare, BoardItems, out _)).Wait();                        
                         DeeperMoveAnalysis();
                     }
                     else if (playerWantsToCapturePiece)
@@ -213,7 +213,7 @@ namespace StockChessCS.ViewModels
                             targetSquare = BoardItems.OfType<BoardSquare>().
                                 Where(s => s.Rank == int.Parse(position2.ElementAt(1).ToString()) &
                                 s.File == position2.ElementAt(0)).SingleOrDefault();
-                            ctxTaskFactory.StartNew(() => Chess.MovePiece(enginePiece, targetSquare, BoardItems)).Wait();
+                            ctxTaskFactory.StartNew(() => Chess.MovePiece(enginePiece, targetSquare, BoardItems, out _)).Wait();
                         }
                         IsEngineThinking = false;
                     }
