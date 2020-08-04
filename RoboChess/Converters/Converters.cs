@@ -21,8 +21,8 @@ namespace RoboChess.Converters
 
     public class BooleanColorConverter : IValueConverter
     {
-        private Color green = new Color() { G = 255 };
-        private Color red = new Color() { R = 255 };
+        private SolidColorBrush green = new SolidColorBrush(Color.FromRgb(0, 255, 0));
+        private SolidColorBrush red = new SolidColorBrush(Color.FromRgb(255, 0, 0));
 
         #region IValueConverter Members
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)

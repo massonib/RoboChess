@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RoboChess"
+        xmlns:h="clr-namespace:RoboChess.Helpers"
         mc:Ignorable="d"
         Title="MainWindow" Width="800" Height="800"
         DataContext="{Binding MainVM, Source={StaticResource VMLocator}}">
@@ -47,7 +48,7 @@
                 </MenuItem>
                 <!--Game menu-->
                 <MenuItem Header="Game" Margin="0,0,0,0">
-                    <!--<MenuItem.Icon>
+                    <MenuItem.Icon>
                         <Border Style="{StaticResource IconBorderStyle}">
                             <UniformGrid>
                                 <Rectangle Fill="Wheat"/>
@@ -56,7 +57,7 @@
                                 <Rectangle Fill="Wheat"/>
                             </UniformGrid>
                         </Border>
-                    </MenuItem.Icon>-->
+                    </MenuItem.Icon>
                     <MenuItem Header="New Game" Command="{Binding NewGameCommand}" IsEnabled="{Binding CanStartGame}"/>
                     <MenuItem Header="Load Game From 'Moves'" Command="{Binding LoadGameCommand}" IsEnabled="{Binding CanStartGame}"/>
                     <MenuItem >
@@ -70,7 +71,7 @@
                 </MenuItem>
                 <!--Color menu-->
                 <MenuItem Name="ColorMenuItem" Header="Color" Margin="12,0,0,0">
-                    <!--<MenuItem.Icon>
+                    <MenuItem.Icon>
                         <Border Style="{StaticResource IconBorderStyle}">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -81,7 +82,7 @@
                                 <Rectangle Grid.Row="1" Fill="Black"/>
                             </Grid>
                         </Border>
-                    </MenuItem.Icon>-->
+                    </MenuItem.Icon>
 
                     <MenuItem Name="WhiteMenuItem" Header="White" IsCheckable="True" IsChecked="{Binding PlayerIsWhite, Mode=TwoWay}"
                           Checked="FlipBoard" Command="{Binding ChangePlayerColorCommand}"/>
@@ -99,15 +100,15 @@
                  SelectedItem="{Binding SelectedBoardItem, Mode=OneWayToSource}"     
                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 RenderTransformOrigin="0.5,0.5" Grid.Row="1"/>
-                 <!--ItemContainerStyle="{StaticResource BoardItemContainerStyle}"
+                 RenderTransformOrigin="0.5,0.5" Grid.Row="1"
+                 ItemContainerStyle="{StaticResource BoardItemContainerStyle}"
                  ItemTemplate="{StaticResource BoardTemplate}"
-                 ItemsPanel="{StaticResource BoardPanelTemplate}"-->
+                 ItemsPanel="{StaticResource BoardPanelTemplate}"/>
              
 
-            <!--<TextBlock Text="CHECKMATE" Foreground="{DynamicResource AccentColorBrush}" Grid.Row="2" 
+            <TextBlock Text="CHECKMATE" Foreground="{DynamicResource AccentColorBrush}" Grid.Row="2" 
                    VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="16" FontWeight="Bold"
-                   Style="{StaticResource CheckmateTxtStyle}"/>-->
+                   Style="{StaticResource CheckmateTxtStyle}"/>
 
             <Grid Grid.Row="3">
                 <Grid.RowDefinitions>
@@ -122,11 +123,11 @@
                     <Label Content="Moves"/>
 
                 </StackPanel>
-                <ScrollViewer Canvas.Left="12" Canvas.Top="12" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" local:AutoScrollBehavior.AutoScroll="True">
+                <ScrollViewer Canvas.Left="12" Canvas.Top="12" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" h:AutoScrollBehavior.AutoScroll="True">
                     <TextBox TextWrapping="Wrap" Text="{Binding Moves, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 </ScrollViewer>
                 <Label Content="Log" Grid.Row="0" Grid.Column="1"/>
-                <ScrollViewer Canvas.Left="12" Canvas.Top="12" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" local:AutoScrollBehavior.AutoScroll="True">
+                <ScrollViewer Canvas.Left="12" Canvas.Top="12" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" h:AutoScrollBehavior.AutoScroll="True">
                     <TextBox IsReadOnly="True" TextWrapping="Wrap" Text="{Binding Read}"/>
                 </ScrollViewer>
             </Grid>

@@ -9,18 +9,18 @@
     <Grid Background="#33000000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Background="#FFFFFF" MinHeight="100" MinWidth="200">
             <Grid.RowDefinitions>
-                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="40"></RowDefinition>
                 <RowDefinition Height="*"></RowDefinition>
-                <RowDefinition Height="35"></RowDefinition>
+                <RowDefinition Height="40"></RowDefinition>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Background="#EEEEEE">
-                <Label Content="Error" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Label Content="Error" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Black"/>
             </Grid>
             <Grid Grid.Row="1" Margin="10,20">
                 <TextBlock Text="{Binding ErrorMessage}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
             </Grid>
             <Grid Grid.Row="2" Background="#EEEEEE">
-                <Button Content="OK" Width="80" Height="25" Command="{Binding CloseErrorMessageCommand}" />
+                <Button Content="OK" Width="80" Height="30" Command="{Binding CloseErrorMessageCommand}" />
             </Grid>
         </Grid>
     </Grid>

@@ -25,15 +25,15 @@ C:\Github\RoboChess\StockChessCS\bin\Debug\System.Reactive.Interfaces.xml
 C:\Github\RoboChess\StockChessCS\bin\Debug\System.Reactive.Linq.xml
 C:\Github\RoboChess\StockChessCS\bin\Debug\System.Reactive.PlatformServices.xml
 C:\Github\RoboChess\StockChessCS\bin\Debug\System.Reactive.Windows.Threading.xml
-C:\Github\RoboChess\StockChessCS\obj\Debug\MainWindow.baml
-C:\Github\RoboChess\StockChessCS\obj\Debug\SCDictionary.baml
-C:\Github\RoboChess\StockChessCS\obj\Debug\App.baml
 C:\Github\RoboChess\StockChessCS\obj\Debug\MainWindow.g.cs
 C:\Github\RoboChess\StockChessCS\obj\Debug\App.g.cs
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS_Content.g.cs
 C:\Github\RoboChess\StockChessCS\obj\Debug\GeneratedInternalTypeHelper.g.cs
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS_MarkupCompile.cache
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS_MarkupCompile.lref
+C:\Github\RoboChess\StockChessCS\obj\Debug\App.baml
+C:\Github\RoboChess\StockChessCS\obj\Debug\MainWindow.baml
+C:\Github\RoboChess\StockChessCS\obj\Debug\SCDictionary.baml
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.g.resources
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.Properties.Resources.resources
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.csproj.GenerateResource.cache
@@ -41,3 +41,4 @@ C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.csproj.CoreCompileInputs
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.csproj.CopyComplete
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.exe
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.pdb
+C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.csprojAssemblyReference.cache

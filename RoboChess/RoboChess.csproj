@@ -96,10 +96,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="AutoScroll.cs" />
-    <Compile Include="CommandWithNoCondition.cs" />
-    <Compile Include="Converters.cs" />
-    <Compile Include="ViewModelLocator.cs" />
+    <Compile Include="Helpers\AutoScroll.cs" />
+    <Compile Include="Helpers\CommandWithNoCondition.cs" />
+    <Compile Include="Converters\Converters.cs" />
+    <Compile Include="Helpers\ViewModelLocator.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -108,7 +108,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="CommandWithCondition.cs" />
+    <Compile Include="Helpers\CommandWithCondition.cs" />
     <Compile Include="MainViewModel.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
@@ -124,7 +124,7 @@
       <DependentUpon>MessageControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Move.cs" />
-    <Compile Include="Observable.cs" />
+    <Compile Include="Helpers\Observable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
