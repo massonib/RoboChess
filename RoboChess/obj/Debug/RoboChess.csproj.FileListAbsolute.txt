@@ -1,10 +1,3 @@
-C:\Github\RoboChess\RoboChess\obj\Debug\RoboChess.csprojAssemblyReference.cache
-C:\Github\RoboChess\RoboChess\obj\Debug\MainWindow.g.cs
-C:\Github\RoboChess\RoboChess\obj\Debug\MessageControl.g.cs
-C:\Github\RoboChess\RoboChess\obj\Debug\App.g.cs
-C:\Github\RoboChess\RoboChess\obj\Debug\GeneratedInternalTypeHelper.g.cs
-C:\Github\RoboChess\RoboChess\obj\Debug\RoboChess_MarkupCompile.cache
-C:\Github\RoboChess\RoboChess\obj\Debug\RoboChess_MarkupCompile.lref
 C:\Github\RoboChess\RoboChess\bin\Debug\stockfish_8_x64.exe
 C:\Github\RoboChess\RoboChess\bin\Debug\RoboChess.exe.config
 C:\Github\RoboChess\RoboChess\bin\Debug\RoboChess.exe
@@ -43,6 +36,13 @@ C:\Github\RoboChess\RoboChess\bin\Debug\System.Runtime.CompilerServices.Unsafe.x
 C:\Github\RoboChess\RoboChess\bin\Debug\System.Reactive.Linq.xml
 C:\Github\RoboChess\RoboChess\bin\Debug\System.Reactive.Core.xml
 C:\Github\RoboChess\RoboChess\bin\Debug\System.Reactive.Interfaces.xml
+C:\Github\RoboChess\RoboChess\obj\Debug\RoboChess.csprojAssemblyReference.cache
+C:\Github\RoboChess\RoboChess\obj\Debug\MainWindow.g.cs
+C:\Github\RoboChess\RoboChess\obj\Debug\MessageControl.g.cs
+C:\Github\RoboChess\RoboChess\obj\Debug\App.g.cs
+C:\Github\RoboChess\RoboChess\obj\Debug\GeneratedInternalTypeHelper.g.cs
+C:\Github\RoboChess\RoboChess\obj\Debug\RoboChess_MarkupCompile.cache
+C:\Github\RoboChess\RoboChess\obj\Debug\RoboChess_MarkupCompile.lref
 C:\Github\RoboChess\RoboChess\obj\Debug\App.baml
 C:\Github\RoboChess\RoboChess\obj\Debug\MainWindow.baml
 C:\Github\RoboChess\RoboChess\obj\Debug\MessageControl.baml

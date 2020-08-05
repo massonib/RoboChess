@@ -100,6 +100,7 @@
     <Compile Include="Helpers\CommandWithNoCondition.cs" />
     <Compile Include="Converters\Converters.cs" />
     <Compile Include="Helpers\ViewModelLocator.cs" />
+    <Compile Include="RobotBoardRotation.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

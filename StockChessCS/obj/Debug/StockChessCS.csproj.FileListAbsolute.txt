@@ -41,3 +41,4 @@ C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.csproj.CoreCompileInputs
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.csproj.CopyComplete
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.exe
 C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.pdb
+C:\Github\RoboChess\StockChessCS\obj\Debug\StockChessCS.csprojAssemblyReference.cache

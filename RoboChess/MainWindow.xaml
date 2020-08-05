@@ -128,7 +128,7 @@
                 </ScrollViewer>
                 <Label Content="Log" Grid.Row="0" Grid.Column="1"/>
                 <ScrollViewer Canvas.Left="12" Canvas.Top="12" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" h:AutoScrollBehavior.AutoScroll="True">
-                    <TextBox IsReadOnly="True" TextWrapping="Wrap" Text="{Binding Read}"/>
+                    <TextBox IsReadOnly="True" TextWrapping="Wrap" Text="{Binding Logger}"/>
                 </ScrollViewer>
             </Grid>
         </Grid>
