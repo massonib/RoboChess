@@ -24,7 +24,7 @@ defInt terminatedSuccessfully
 'The rank and file IDs. File: a = 0, b = 1 ... Rank: 1 = 0, 2 = 1, ...
 defInt xOffset
 defInt yOffset
-defDbl moveHeight = pickupHeight + 120
+defDbl moveHeight = pickupHeight + 110
 defDbl increment = 55.5 'Change if using a different board
 
 'Set the robot home. This should not change.
@@ -37,7 +37,9 @@ defdbl takenUnitsY = yOrigin - 500
 defdbl extraQueenX = xOrigin
 defdbl extraQueenY = yOrigin + 100
 defint pickup = -1
-defint speedVal
+defint speedVal = 100
+defint accelVal = 10
+defint decelVal = 5
 defint num = 0
 
 'Setup Robot and Camera Communications
@@ -87,24 +89,24 @@ While counter = 0
 			if(actionID = 0) then			
 				gotoX = homeX
 				gotoY = homeY
-				MOVE L,(gotoX, gotoY , homeZ, RX, RY, RZ), SPEED = 25, ACCEL = 1, DECEL = 1
+				MOVE L,(gotoX, gotoY , homeZ, RX, RY, RZ), SPEED = speedVal, ACCEL = accelVal, DECEL = decelVal
 			elseif (actionID = 1) then				
 				gotoX = xOrigin + xOffset * increment
 				gotoY = yOrigin - yOffset * increment 
-				MOVE L,(gotoX, gotoY , moveHeight, RX, RY, RZ), SPEED = 25, ACCEL = 1, DECEL = 1
+				MOVE L,(gotoX, gotoY , moveHeight, RX, RY, RZ), SPEED = speedVal, ACCEL = accelVal, DECEL = decelVal
 			elseif (actionID = 2) then
-				MOVE L,(gotoX, gotoY , pickupHeight, RX, RY, RZ), SPEED = 5, ACCEL = 1, DECEL = 1
+				MOVE L,(gotoX, gotoY , pickupHeight, RX, RY, RZ), SPEED = 20, ACCEL = 5, DECEL = 1
 			elseif (actionID = 3) then
-				MOVE L,(gotoX, gotoY , moveHeight, RX, RY, RZ), SPEED = 25, ACCEL = 1, DECEL = 1
+				MOVE L,(gotoX, gotoY , moveHeight, RX, RY, RZ), SPEED = speedVal, ACCEL = accelVal, DECEL = decelVal
 			elseif (actionID = 4) then
 				'When actionID 4 is sent, it also send the rank and file offsets for the taken pieces
 				gotoX = takenUnitsX + xOffset * increment 
 				gotoY = takenUnitsY - yOffset * increment
-				MOVE L,(gotoX, gotoY , moveHeight, RX, RY, RZ), SPEED = 25, ACCEL = 1, DECEL = 1
+				MOVE L,(gotoX, gotoY , moveHeight, RX, RY, RZ), SPEED = speedVal, ACCEL = accelVal, DECEL = decelVal
 			elseif (actionID = 5) then
 				gotoX = extraQueenX 
 				gotoY = extraQueenY
-				MOVE L,(gotoX, gotoY , moveHeight, RX, RY, RZ), SPEED = 25, ACCEL = 1, DECEL = 1
+				MOVE L,(gotoX, gotoY , moveHeight, RX, RY, RZ), SPEED = speedVal, ACCEL = accelVal, DECEL = decelVal
 			end if		
 		endif
 		FLUSH #intCamCom

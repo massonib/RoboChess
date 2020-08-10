@@ -158,41 +158,43 @@ LM:8:brandontest.ric:0332:1332-136e:'link module'
  #145: 007f, 1, 1332, BRANDONTEST
 LM:9:simplemove.ric:036f:136f-13a8:'link module'
  #146: 007f, 1, 136f, SIMPLEMOVE
-LM:10:robochess.ric:03a9:13a9-1402:'link module'
+LM:10:robochess.ric:03a9:13a9-1404:'link module'
  #147: 0005, 1, 13a9, ROBOCHESS+TOKEN#3,     0,     0,     0
  #148: 0005, 1, 13a9, ROBOCHESS+TOKEN#1,     0,     0,     0
- #149: 0002, 1, 1402, ROBOCHESS+COUNTER,     0,     0,     0
- #150: 0002, 1, 1401, ROBOCHESS+NUM,     0,     0,     0
- #151: 0002, 1, 1400, ROBOCHESS+SPEEDVAL,     0,     0,     0
- #152: 0002, 1, 13ff, ROBOCHESS+PICKUP,     0,     0,     0
- #153: 0004, 1, 13fe, ROBOCHESS+EXTRAQUEENY,     0,     0,     0
- #154: 0004, 1, 13fd, ROBOCHESS+EXTRAQUEENX,     0,     0,     0
- #155: 0004, 1, 13fc, ROBOCHESS+TAKENUNITSY,     0,     0,     0
- #156: 0004, 1, 13fb, ROBOCHESS+TAKENUNITSX,     0,     0,     0
- #157: 0004, 1, 13fa, ROBOCHESS+HOMEZ,     0,     0,     0
- #158: 0004, 1, 13f9, ROBOCHESS+HOMEY,     0,     0,     0
- #159: 0004, 1, 13f8, ROBOCHESS+HOMEX,     0,     0,     0
- #160: 0004, 1, 13f7, ROBOCHESS+INCREMENT,     0,     0,     0
- #161: 0004, 1, 13f6, ROBOCHESS+MOVEHEIGHT,     0,     0,     0
- #162: 0002, 1, 13f5, ROBOCHESS+YOFFSET,     0,     0,     0
- #163: 0002, 1, 13f4, ROBOCHESS+XOFFSET,     0,     0,     0
- #164: 0002, 1, 13f3, ROBOCHESS+TERMINATEDSUCCESSFULLY,     0,     0,     0
- #165: 0004, 1, 13f2, ROBOCHESS+GOTOZ,     0,     0,     0
- #166: 0004, 1, 13f1, ROBOCHESS+GOTOY,     0,     0,     0
- #167: 0004, 1, 13f0, ROBOCHESS+GOTOX,     0,     0,     0
- #168: 0002, 1, 13ef, ROBOCHESS+ACTIONID,     0,     0,     0
- #169: 0105, 1, 13ed, ROBOCHESS+FVALUE,    25,     0,     0
- #170: 0005, 1, 13ec, ROBOCHESS+STRFVALUE,     0,     0,     0
- #171: 0002, 1, 13eb, ROBOCHESS+INTCONSTATE,     0,     0,     0
- #172: 0002, 1, 13ea, ROBOCHESS+INTCAMCOM,     0,     0,     0
- #173: 0004, 1, 13e9, ROBOCHESS+SLOWBELOWZ,     0,     0,     0
- #174: 0004, 1, 13e8, ROBOCHESS+RZ,     0,     0,     0
- #175: 0004, 1, 13e7, ROBOCHESS+RY,     0,     0,     0
- #176: 0004, 1, 13e6, ROBOCHESS+RX,     0,     0,     0
- #177: 0004, 1, 13e5, ROBOCHESS+PICKUPHEIGHT,     0,     0,     0
- #178: 0004, 1, 13e4, ROBOCHESS+YORIGIN,     0,     0,     0
- #179: 0004, 1, 13e3, ROBOCHESS+XORIGIN,     0,     0,     0
- #180: 007f, 1, 13a9, ROBOCHESS
-FA:03fa:'free allocation'
+ #149: 0002, 1, 1404, ROBOCHESS+COUNTER,     0,     0,     0
+ #150: 0002, 1, 1403, ROBOCHESS+NUM,     0,     0,     0
+ #151: 0002, 1, 1402, ROBOCHESS+DECELVAL,     0,     0,     0
+ #152: 0002, 1, 1401, ROBOCHESS+ACCELVAL,     0,     0,     0
+ #153: 0002, 1, 1400, ROBOCHESS+SPEEDVAL,     0,     0,     0
+ #154: 0002, 1, 13ff, ROBOCHESS+PICKUP,     0,     0,     0
+ #155: 0004, 1, 13fe, ROBOCHESS+EXTRAQUEENY,     0,     0,     0
+ #156: 0004, 1, 13fd, ROBOCHESS+EXTRAQUEENX,     0,     0,     0
+ #157: 0004, 1, 13fc, ROBOCHESS+TAKENUNITSY,     0,     0,     0
+ #158: 0004, 1, 13fb, ROBOCHESS+TAKENUNITSX,     0,     0,     0
+ #159: 0004, 1, 13fa, ROBOCHESS+HOMEZ,     0,     0,     0
+ #160: 0004, 1, 13f9, ROBOCHESS+HOMEY,     0,     0,     0
+ #161: 0004, 1, 13f8, ROBOCHESS+HOMEX,     0,     0,     0
+ #162: 0004, 1, 13f7, ROBOCHESS+INCREMENT,     0,     0,     0
+ #163: 0004, 1, 13f6, ROBOCHESS+MOVEHEIGHT,     0,     0,     0
+ #164: 0002, 1, 13f5, ROBOCHESS+YOFFSET,     0,     0,     0
+ #165: 0002, 1, 13f4, ROBOCHESS+XOFFSET,     0,     0,     0
+ #166: 0002, 1, 13f3, ROBOCHESS+TERMINATEDSUCCESSFULLY,     0,     0,     0
+ #167: 0004, 1, 13f2, ROBOCHESS+GOTOZ,     0,     0,     0
+ #168: 0004, 1, 13f1, ROBOCHESS+GOTOY,     0,     0,     0
+ #169: 0004, 1, 13f0, ROBOCHESS+GOTOX,     0,     0,     0
+ #170: 0002, 1, 13ef, ROBOCHESS+ACTIONID,     0,     0,     0
+ #171: 0105, 1, 13ed, ROBOCHESS+FVALUE,    25,     0,     0
+ #172: 0005, 1, 13ec, ROBOCHESS+STRFVALUE,     0,     0,     0
+ #173: 0002, 1, 13eb, ROBOCHESS+INTCONSTATE,     0,     0,     0
+ #174: 0002, 1, 13ea, ROBOCHESS+INTCAMCOM,     0,     0,     0
+ #175: 0004, 1, 13e9, ROBOCHESS+SLOWBELOWZ,     0,     0,     0
+ #176: 0004, 1, 13e8, ROBOCHESS+RZ,     0,     0,     0
+ #177: 0004, 1, 13e7, ROBOCHESS+RY,     0,     0,     0
+ #178: 0004, 1, 13e6, ROBOCHESS+RX,     0,     0,     0
+ #179: 0004, 1, 13e5, ROBOCHESS+PICKUPHEIGHT,     0,     0,     0
+ #180: 0004, 1, 13e4, ROBOCHESS+YORIGIN,     0,     0,     0
+ #181: 0004, 1, 13e3, ROBOCHESS+XORIGIN,     0,     0,     0
+ #182: 007f, 1, 13a9, ROBOCHESS
+FA:03fc:'free allocation'
 EA:'end of allocation map'
 EM:'end of link map'

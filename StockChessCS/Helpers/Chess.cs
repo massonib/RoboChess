@@ -122,45 +122,60 @@ namespace StockChessCS.Helpers
         private static void PawnMove(ChessPiece piece, BoardSquare targetSquare, MultiThreadedObservableCollection<IBoardItem> items, 
             out MoveType moveType)
         {
+            //Default
             moveType = MoveType.Standard;
 
-            // Promotion
-            switch (piece.Color)
-            {   
-                case PieceColor.Black:
-                    if (piece.Rank == 1)
-                    {
-                        piece.Piece = PieceType.Queen;
-                        moveType = MoveType.Promotion;
-                    }
-                    break;
-                case PieceColor.White:
-                    if (piece.Rank == 8)
-                    {
-                        piece.Piece = PieceType.Queen;
-                        moveType = MoveType.Promotion;
-                    }
-                    break;
-            }
-            // En passant
+            //Check En passant prior to moving the pawn
             if (piece.File != targetSquare.File)
             {
                 moveType = MoveType.EnPassant;
+                //These pawns have an equal rank prior to the capture
                 var opponentPawn = items.OfType<ChessPiece>().Where(p => p.Color != piece.Color &&
                 p.Piece == PieceType.Pawn && p.Rank == piece.Rank && p.File == targetSquare.File).FirstOrDefault();
-
                 items.Remove(opponentPawn);
             }
 
+            //move the pawn
             Move(piece, targetSquare);
+
+            // Check for promotion after moving the pawn
+            if (IsPromotion(piece))
+            {
+                piece.Piece = PieceType.Queen;
+                moveType = MoveType.Promotion;
+            }             
         }
 
         public static void CapturePiece(ChessPiece selectedPiece, ChessPiece otherPiece,
-            MultiThreadedObservableCollection<IBoardItem> items)
+            MultiThreadedObservableCollection<IBoardItem> items, out MoveType moveType)
         {
             selectedPiece.Rank = otherPiece.Rank;
             selectedPiece.File = otherPiece.File;
             items.Remove(otherPiece);
+
+            //Check for promotion with a capture, after moving the pawn
+            if (IsPromotion(selectedPiece))
+            {
+                selectedPiece.Piece = PieceType.Queen;
+                moveType = MoveType.Promotion;
+            }
+            else moveType = MoveType.Standard;
+        }
+
+        private static bool IsPromotion(ChessPiece piece)
+        {
+            if (piece.Piece == PieceType.Pawn)
+            {
+                //Check for and apply pawn promotion
+                switch (piece.Color)
+                {
+                    case PieceColor.Black:
+                        return (piece.Rank == 1);
+                    case PieceColor.White:
+                        return (piece.Rank == 8);
+                }
+            }          
+            return false;
         }
     }
 }

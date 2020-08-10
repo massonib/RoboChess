@@ -194,7 +194,7 @@ namespace StockChessCS.ViewModels
                     }
                     else if (playerWantsToCapturePiece)
                     {
-                        ctxTaskFactory.StartNew(() => Chess.CapturePiece(selectedPiece, targetPiece, BoardItems)).Wait();                        
+                        ctxTaskFactory.StartNew(() => Chess.CapturePiece(selectedPiece, targetPiece, BoardItems, out _)).Wait();                        
                         DeeperMoveAnalysis();
                     }
                     else // Engine move
@@ -206,7 +206,7 @@ namespace StockChessCS.ViewModels
 
                         if (pieceToCapture != null)
                         {
-                            ctxTaskFactory.StartNew(() => Chess.CapturePiece(enginePiece, pieceToCapture, BoardItems)).Wait();
+                            ctxTaskFactory.StartNew(() => Chess.CapturePiece(enginePiece, pieceToCapture, BoardItems, out _)).Wait();
                         }
                         else
                         {
