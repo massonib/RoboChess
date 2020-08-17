@@ -11,11 +11,13 @@
     }
 
     public enum MoveType
-    {    
-        Standard,
+    {
+        Move,
+        Capture,  
         ShortCastle,
         LongCastle,
         Promotion,
+        PromotionWithCapture,
         EnPassant
     }
 }

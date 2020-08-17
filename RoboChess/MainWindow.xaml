@@ -63,8 +63,8 @@
                     <MenuItem >
                         <MenuItem.Header>
                             <StackPanel Orientation="Horizontal">
-                                <Label Content="Elo Ranking" Margin="-5,0,0,0"/>
-                                <TextBox Text="{Binding Elo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10,0,0,0" Width="50"/>
+                                <Label Content="Stockfish Level" Margin="-5,0,0,0"/>
+                                <TextBox Text="{Binding SkillLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10,0,0,0" Width="50"/>
                             </StackPanel>
                         </MenuItem.Header>
                     </MenuItem>

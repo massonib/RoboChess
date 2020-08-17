@@ -65,12 +65,36 @@ namespace StockChessCS.Helpers
                 Piece = PieceType.Rook, Rank = 1, File = 'h' });
             
             return items;
-        }        
+        }
 
-        public static void MovePiece(ChessPiece selectedPiece, BoardSquare selectedSquare,
+        public static void MovePiece(ChessPiece selectedPiece, IBoardItem target,
             MultiThreadedObservableCollection<IBoardItem> items, out MoveType moveType)
         {
-            moveType = MoveType.Standard;
+            if(target is ChessPiece)
+            {
+                CapturePiece(selectedPiece, (ChessPiece)target, items, out moveType);
+            }
+            else
+            {
+                MovePiece(selectedPiece, (BoardSquare)target, items, out moveType);
+            }
+        }
+
+        public static MoveType GetMoveType(ChessPiece selectedPiece, IBoardItem target)
+        {
+            if (target is ChessPiece) return GetCaptureType(selectedPiece, target);
+            switch (selectedPiece.Piece)
+            {
+                case PieceType.King: return GetKingMoveType(selectedPiece, (BoardSquare)target);
+                case PieceType.Pawn: return GetPawnMoveType(selectedPiece, (BoardSquare)target);
+                default: return MoveType.Move;
+            }
+        }
+
+        internal static void MovePiece(ChessPiece selectedPiece, BoardSquare selectedSquare,
+            MultiThreadedObservableCollection<IBoardItem> items, out MoveType moveType)
+        {
+            moveType = MoveType.Move;
             switch (selectedPiece.Piece)
             {
                 case PieceType.King:
@@ -93,17 +117,18 @@ namespace StockChessCS.Helpers
 
         private static void KingMove(ChessPiece piece, BoardSquare targetSquare, MultiThreadedObservableCollection<IBoardItem> items,
             out MoveType moveType)
-        {            
-            if (piece.File == 'e' && targetSquare.File == 'g') // Short castle
+        {
+            moveType = GetKingMoveType(piece, targetSquare);
+
+            //Update the piece locations
+            if (moveType == MoveType.ShortCastle) 
             {
-                moveType = MoveType.ShortCastle;
                 var rook = items.OfType<ChessPiece>().Where(p => p.Color == piece.Color &&
                 p.Piece == PieceType.Rook && p.File == 'h').FirstOrDefault();
-
                 piece.File = 'g';
                 rook.File = 'f';                
             }
-            else if (piece.File == 'e' && targetSquare.File == 'c') // Long castle
+            else if (moveType == MoveType.LongCastle)
             {
                 moveType = MoveType.LongCastle;
                 var rook = items.OfType<ChessPiece>().Where(p => p.Color == piece.Color &&
@@ -114,68 +139,68 @@ namespace StockChessCS.Helpers
             }
             else 
             {
-                moveType = MoveType.Standard;
                 Move(piece, targetSquare); 
             }
+        }
+
+        internal static MoveType GetKingMoveType(ChessPiece piece, BoardSquare targetSquare)
+        {
+            if (piece.File == 'e' && targetSquare.File == 'g') return MoveType.ShortCastle;
+            else if (piece.File == 'e' && targetSquare.File == 'c') return MoveType.LongCastle;
+            else return MoveType.Move;
         }
 
         private static void PawnMove(ChessPiece piece, BoardSquare targetSquare, MultiThreadedObservableCollection<IBoardItem> items, 
             out MoveType moveType)
         {
             //Default
-            moveType = MoveType.Standard;
+            moveType = GetPawnMoveType(piece, targetSquare);
+            Move(piece, targetSquare);
 
-            //Check En passant prior to moving the pawn
-            if (piece.File != targetSquare.File)
+            if (moveType == MoveType.EnPassant)
             {
-                moveType = MoveType.EnPassant;
                 //These pawns have an equal rank prior to the capture
                 var opponentPawn = items.OfType<ChessPiece>().Where(p => p.Color != piece.Color &&
                 p.Piece == PieceType.Pawn && p.Rank == piece.Rank && p.File == targetSquare.File).FirstOrDefault();
                 items.Remove(opponentPawn);
             }
-
-            //move the pawn
-            Move(piece, targetSquare);
-
-            // Check for promotion after moving the pawn
-            if (IsPromotion(piece))
-            {
-                piece.Piece = PieceType.Queen;
-                moveType = MoveType.Promotion;
-            }             
+            //Change the piece to a queen for promotion. TODO: Player could select a knight in very special cases.
+            if (moveType == MoveType.Promotion) piece.Piece = PieceType.Queen;       
         }
 
-        public static void CapturePiece(ChessPiece selectedPiece, ChessPiece otherPiece,
+        private static MoveType GetPawnMoveType(ChessPiece piece, BoardSquare targetSquare)
+        {
+            //Check En passant prior to moving the pawn. If the pawn is moving diagonal, but it is not a capture, 
+            //then it must be En Passant. The engine will determine if this move is valid.
+            if (piece.File != targetSquare.File) return MoveType.EnPassant;
+            if (IsPromotion(piece, targetSquare)) return MoveType.Promotion;
+            return MoveType.Move;
+        }
+
+        internal static void CapturePiece(ChessPiece selectedPiece, ChessPiece otherPiece,
             MultiThreadedObservableCollection<IBoardItem> items, out MoveType moveType)
         {
+            //First, get the moveType
+            moveType = GetCaptureType(selectedPiece, otherPiece);
+
+            //Update the pieces
+            if (moveType == MoveType.PromotionWithCapture) selectedPiece.Piece = PieceType.Queen;
             selectedPiece.Rank = otherPiece.Rank;
             selectedPiece.File = otherPiece.File;
-            items.Remove(otherPiece);
-
-            //Check for promotion with a capture, after moving the pawn
-            if (IsPromotion(selectedPiece))
-            {
-                selectedPiece.Piece = PieceType.Queen;
-                moveType = MoveType.Promotion;
-            }
-            else moveType = MoveType.Standard;
+            items.Remove(otherPiece);   
         }
 
-        private static bool IsPromotion(ChessPiece piece)
+        internal static MoveType GetCaptureType(ChessPiece piece, IBoardItem target)
         {
-            if (piece.Piece == PieceType.Pawn)
-            {
-                //Check for and apply pawn promotion
-                switch (piece.Color)
-                {
-                    case PieceColor.Black:
-                        return (piece.Rank == 1);
-                    case PieceColor.White:
-                        return (piece.Rank == 8);
-                }
-            }          
-            return false;
+            //Check for promotion with/without capture. Otherwise, it is just a standard capture.
+            return IsPromotion(piece, target) ? MoveType.PromotionWithCapture : MoveType.Capture;
+        }
+
+        private static bool IsPromotion(ChessPiece piece, IBoardItem target)
+        {
+            //Check for promotion with/without capture.
+            //Since pawns can never go backwards, if a pawn is moving to or capturing on rank 8 or 1, then it must be a promotion.
+            return (piece.Piece == PieceType.Pawn && (target.Rank == 1 || target.Rank == 8));
         }
     }
 }

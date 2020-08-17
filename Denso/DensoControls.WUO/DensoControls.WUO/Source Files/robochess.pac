@@ -74,7 +74,7 @@ While counter = 0
 		yOffset = val(Fvalue(2))
 		num = val(Fvalue(3))
 		FLUSH #intCamCom
-		PRINT #intCamCom "(R,Recieved: " + strFvalue + ")"
+		PRINT #intCamCom "(Robot,Recieved: " + strFvalue + ")"
 
 		if(actionID = -1) then
 			'Not a valid command.
@@ -110,7 +110,7 @@ While counter = 0
 			end if		
 		endif
 		FLUSH #intCamCom
-		PRINT #intCamCom "(R,completed)"
+		PRINT #intCamCom "(Robot,completed)"
 	end if
 Wend
 

@@ -51,6 +51,11 @@ namespace StockChessCS.Models
             }
         }
 
+        public string Position()
+        {
+            return File + Rank.ToString();
+        }
+
         public ChessBoardItem ItemType { get; set; }
     }
 }
