@@ -15,6 +15,7 @@ Camera Triggers
 1. Trigger the camera and return the squares that changed on the board. These should be sent in order of most likely change (i.e. largest blob area in my implenentation). Some noise in not an issue.
 
 Robot Actions IDs. Once each action is complete, the robot should return "completed." 
+
 0. Initialize/reset the robot to home (must have "Robot" in return string)
 1. Move the arm to given rank/file
 2. Lower the arm
