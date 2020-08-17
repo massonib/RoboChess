@@ -10,6 +10,7 @@ The TCP connections for the robot are fairly simple. Just make sure the clients 
 The server will send a 0 to reset the clients, and the clients should return their type ("Camera" or "Robot"). 
 
 Camera Triggers
+
 0. Initialize/reset the camera (must have "Camera" in return string)
 1. Trigger the camera and return the squares that changed on the board. These should be sent in order of most likely change (i.e. largest blob area in my implenentation). Some noise in not an issue.
 
