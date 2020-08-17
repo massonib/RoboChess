@@ -1,5 +1,7 @@
-# RoboChess
+# Video Link
+https://youtu.be/fTlt4hATUtg
 
+# RoboChess
 Once installed, the camera, robot, and digital control unit will need to be setup using TCP. 
 
 The digital control unit currently uses EasyModbus. To use a different protocol, change the Moxa.cs class and the line that initiates it in the MainViewModel constructor (Moxa = new Moxa(502, "10.2.10.15").
@@ -18,3 +20,10 @@ Robot Actions IDs. Once each action is complete, the robot should return "comple
 3. Raiser the arm
 4. Move the arm to the drop-off location
 5. Move the arm to the queen on the side of the board
+
+# Contributions
+Base of program from Meshack Musundi's StockChess project https://www.codeproject.com/Articles/1159746/StockChess
+KTM Research hardware and facilities https://ktmresearch.com/
+
+# License
+https://www.codeproject.com/info/cpol10.aspx
