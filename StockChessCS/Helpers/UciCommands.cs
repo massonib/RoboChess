@@ -10,7 +10,7 @@
         public const string position = "position startpos moves";
         public const string go_movetime = "go movetime";
         public const string stop = "stop";
-        public const string limitStrength = "setoption UCI_LimitStrength value true";
+        public const string limitStrength = "setoption name UCI_LimitStrength value true";
 
         // Commands from engine
         // ====================
@@ -19,9 +19,14 @@
         public const string bestmove = "bestmove";
 
         //Commands requiring input parameter
-        public static string SetElo(int elo)
+        public static string Elo(int elo)
         {
-            return "setoption UCI_Elo value " + elo;
+            return "setoption name UCI_Elo value " + elo;
+        }
+
+        public static string SkillLevel(int skill)
+        {
+            return "setoption name Skill Level value " + skill;
         }
     }
 }

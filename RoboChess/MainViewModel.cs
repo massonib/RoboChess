@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,13 +7,11 @@ using StockChessCS;
 using StockChessCS.Enums;
 using StockChessCS.Helpers;
 using StockChessCS.Interfaces;
-using StockChessCS.Models;
-using EasyModbus;
 using System.Net.Sockets;
 using System.Net;
 using System.IO;
 using RoboChess.Helpers;
-using System.Diagnostics;
+using static RoboChess.Helpers.GetItem;
 
 namespace RoboChess
 {
@@ -38,15 +35,15 @@ namespace RoboChess
                 Set(ref _isPlayerMove, value);
                 if (value)
                 {
-                    RedLight(false);
-                    GreenLight(true);
+                    Moxa.RedLight(false);
+                    Moxa.GreenLight(true);
                     AddToLog("Player's " + (PlayerIsWhite ? "(White)" : "(Black)") + " turn" );
                     Task.Run(() => WaitForPlayer());
                 }
                 else
                 {
-                    RedLight(true);
-                    GreenLight(false);
+                    Moxa.RedLight(true);
+                    Moxa.GreenLight(false);
                     //Now it is the robot's turn. It is allowed to take longer now, since it is not validating.
                     AddToLog("Robot's " + (!PlayerIsWhite ? "(White)" : "(Black)") + " turn");
                     DeeperMoveAnalysis();
@@ -54,14 +51,16 @@ namespace RoboChess
             }
         }
 
-        private string _playerMove;
-        public string PlayerMove
+        private Move _playerMove;
+        public Move PlayerMove
         {
             get => _playerMove;
             set
             {
+                if (value == null) return;
                 Set(ref _playerMove, value);
-                SendMoveToEngine(value);
+                AddToLog("Player move submitted: " + value.Text);
+                SendMoveToEngine(value.Text);
             }
         }
 
@@ -83,14 +82,28 @@ namespace RoboChess
             }
         }
 
-        private int _elo = 1500;
+        private int _elo = 500;
         public int Elo
         {
             get => _elo;
             set
             {
                 Set(ref _elo, value);
-                engine.SendCommand(UciCommands.SetElo(value));
+                Engine.SendCommand(UciCommands.Elo(value));
+            }
+        }
+
+        private int _skillLevel = 5;
+        public int SkillLevel
+        {
+            get => _skillLevel;
+            set
+            {
+                var skill = value;
+                if (skill > 20) skill = 20;
+                else if (skill < 1) skill = 1;
+                Set(ref _skillLevel, skill);
+                Engine.SendCommand(UciCommands.SkillLevel(skill));
             }
         }
 
@@ -100,10 +113,6 @@ namespace RoboChess
             get => _boardItems;
             set => Set(ref _boardItems, value);
         }
-
-        private IEngineService engine;
-        private short deepAnalysisTime = 5000;
-        private short moveValidationTime = 1;
 
         #endregion
 
@@ -116,7 +125,7 @@ namespace RoboChess
             get => _logger;
             set => Set(ref _logger, value);
         }
-        private void AddToLog(string text)
+        internal void AddToLog(string text)
         {
             Log.Append(" " + text + "\n");
             Logger = Log.ToString();
@@ -158,14 +167,11 @@ namespace RoboChess
         {
             Moves = new StringBuilder();
             Log = new StringBuilder();
-            engine = es;
+            Engine = new Engine(es);
+            Engine.engine.EngineMessage += EngineMessage;
             BoardItems = Chess.BoardSetup();
-            engine.EngineMessage += EngineMessage;
-            engine.StartEngine();
-            engine.SendCommand(UciCommands.limitStrength);
-            BoardRotation = new RobotBoardRotation(2);
 
-            ConnectToMoxa();
+            Moxa = new Moxa(502, "10.2.10.15");
             SetupTCP();
 
             ResetServerCommand = new CommandWithNoCondition(ResetServer);
@@ -193,9 +199,10 @@ namespace RoboChess
             BoardItems = Chess.BoardSetup();
 
             //Initialize the engine
-            engine.SendCommand(UciCommands.ucinewgame);
-            engine.SendCommand(UciCommands.limitStrength);
-            engine.SendCommand(UciCommands.SetElo(Elo));
+            Engine.SendCommand(UciCommands.ucinewgame);
+            Engine.SendCommand(UciCommands.SkillLevel(SkillLevel));
+            //engine.SendCommand(UciCommands.limitStrength);
+            //engine.SendCommand(UciCommands.Elo(Elo));
 
             //Load the game or start a new one.
             var playerTurn = PlayerIsWhite;
@@ -222,9 +229,9 @@ namespace RoboChess
             }
 
             //Set things to the home position and then reset the camera
-            OpenGripper();
-            ResetRobot();
-            ResetCamera();
+            Moxa.OpenGripper();
+            Robot.Reset();
+            Camera.Reset();
 
             //This boolean controls whose turn it is. It also triggers events.
             IsPlayerMove = playerTurn;
@@ -241,27 +248,20 @@ namespace RoboChess
             {
                 AddMove(stringMove);
                 var move = new Move(stringMove);
-                var selectedPiece = GetPieceAt(move.From);
-                var targetPiece = GetPieceAt(move.To);
-
-                if (targetPiece != null)
+                var selectedPiece = GetChessPiece(move.From, BoardItems);
+                var target = GetBoardItem(move.To, BoardItems);
+                Chess.MovePiece(selectedPiece, target, BoardItems, out var moveType);
+                if(!playerTurn && (moveType == MoveType.Capture || moveType == MoveType.EnPassant || moveType == MoveType.PromotionWithCapture))
                 {
-                    Chess.CapturePiece(selectedPiece, targetPiece, BoardItems, out _);
-                    if (!playerTurn) numPlayerPiecesTaken++;
-                }
-                else
-                {
-                    Chess.MovePiece(selectedPiece, GetSquareAt(move.To), BoardItems, out var moveType);
-                    if (!playerTurn && moveType == MoveType.EnPassant) numPlayerPiecesTaken++;
-                }
-
+                    numPlayerPiecesTaken++;
+                }              
                 playerTurn = !playerTurn;
             }
             return playerTurn;
         }       
         #endregion
 
-        #region Engine
+        #region Interpreting the engine message.
         private void EngineMessage(string message)
         {
             if (message.Contains(UciCommands.bestmove)) // Message is in the form: bestmove <move> ponder <move>
@@ -272,80 +272,62 @@ namespace RoboChess
                     return;
                 }
                 if (!message.Contains("ponder") && !IsPlayerMove) CheckMate = true; //set to true
+                if (message.Contains("none")) CheckMate = true; //set to true. The player has won!
 
                 //Get the engine move and piece. If none, then the player has achieved checkmate.
-                Move engineMove = null;
-                ChessPiece enginerPiece = null;
-                if (message.Contains("none")) CheckMate = true; //set to true. The player has won!
-                else
-                {
-                    engineMove = new Move(message.Split(' ').ElementAt(1));
-                    enginerPiece = GetPieceAt(engineMove.From);
-                }
+                var engineMove = new Move(message.Split(' ').ElementAt(1));
+                var enginerPiece = GetChessPiece(engineMove.From, BoardItems);             
                                         
-                if (IsPlayerMove)
+                if (IsPlayerMove) 
                 {
                     //If the player made an illegal move, the engine will try moving for the player.
                     //Otherwise, the engine will just make its move. 
-                    if (enginerPiece != null && enginerPiece.Color == PieceColor.White == PlayerIsWhite) // Player made illegal move
+                    if (!CheckMate && enginerPiece.Color == PieceColor.White == PlayerIsWhite) // Player made illegal move
                     {
                         //Player made an illegal move. It is still the player's turn.
                         IllegalPlayerMove();
                     }
                     else
                     {
-                        //Player move is valid
-                        AddMove(PlayerMove);
-                        var playerMove = new Move(PlayerMove);
-                        var playerPiece = GetPieceAt(playerMove.From);
-                        var targetPiece = GetPieceAt(playerMove.To);
-                        if (targetPiece != null) //Player wants to move the piece
-                        {
-                            Chess.CapturePiece(playerPiece, targetPiece, BoardItems, out _);
-                        }
-                        else
-                        {
-                            //Check if player wants to capture a piece or just move
-                            Chess.MovePiece(playerPiece, GetSquareAt(playerMove.To), BoardItems, out _);
-                        }
+                        //Player move is valid. Add it to the move log, and update the BoardItems.
+                        AddMove(PlayerMove.Text); 
+                        Chess.MovePiece(GetChessPiece(PlayerMove.From, BoardItems),
+                            GetBoardItem(PlayerMove.To, BoardItems), BoardItems, out _);
                     }                    
                 }
-                else // Engine move
+                //Check to make doubly sure that the engine is moving its own pieces
+                else if(enginerPiece.Color != PieceColor.White == PlayerIsWhite)
                 {
-                    var targetPiece = GetPieceAt(engineMove.To);
                     AddMove(engineMove.Text);
-                    if (targetPiece != null)
+                    Chess.MovePiece(enginerPiece, GetBoardItem(engineMove.To, BoardItems), BoardItems, out var moveType);
+                    switch (moveType)
                     {
-                        Chess.CapturePiece(enginerPiece, targetPiece, BoardItems, out var moveType);
-                        if(moveType == MoveType.Promotion) Promotion(engineMove, true);
-                        else CapturePiece(engineMove);
+                        case MoveType.Move:
+                            MovePiece(engineMove);
+                            break;
+                        case MoveType.Capture:
+                            CapturePiece(engineMove);
+                            break;
+                        case MoveType.ShortCastle:
+                            MovePiece(engineMove);
+                            MovePiece(new Move("h" + engineMove.From.Rank + "f" + engineMove.From.Rank));
+                            break;
+                        case MoveType.LongCastle:
+                            MovePiece(engineMove);
+                            MovePiece(new Move("a" + engineMove.From.Rank + "d" + engineMove.From.Rank));
+                            break;
+                        case MoveType.Promotion:
+                            Promotion(engineMove, false);
+                            break;
+                        case MoveType.PromotionWithCapture:
+                            Promotion(engineMove, true);
+                            break;
+                        case MoveType.EnPassant:
+                            EnPassant(engineMove);
+                            break;
                     }
-                    else
-                    {
-                        Chess.MovePiece(enginerPiece, GetSquareAt(engineMove.To), BoardItems, out var moveType);
-                        switch (moveType)
-                        {
-                            case MoveType.Standard:
-                                MovePiece(engineMove);
-                                break;
-                            case MoveType.ShortCastle:
-                                MovePiece(engineMove);
-                                MovePiece(new Move("h" + engineMove.From.Rank + "f" + engineMove.From.Rank));
-                                break;
-                            case MoveType.LongCastle:
-                                MovePiece(engineMove);
-                                MovePiece(new Move("a" + engineMove.From.Rank + "d" + engineMove.From.Rank));
-                                break;
-                            case MoveType.Promotion:
-                                Promotion(engineMove, false);
-                                break;
-                            case MoveType.EnPassant:
-                                EnPassant(engineMove);                                   
-                                break;                             
-                        }
-                    }
-                    ResetRobot();
-                    ResetCamera();
+                    Robot.Reset();
+                    Camera.Reset();
                 }
                 IsPlayerMove = !IsPlayerMove;
             }            
@@ -359,32 +341,12 @@ namespace RoboChess
 
         private void DeeperMoveAnalysis()
         {
-            SendMovesToEngine(Moves.ToString(), deepAnalysisTime);
+            Engine.SendMoves(Moves.ToString(), Engine.DeepAnalysisTime);
         }
 
         private void SendMoveToEngine(string move)
         {
-            SendMovesToEngine(Moves.ToString() + " " + move, moveValidationTime);
-        }
-
-        private void SendMovesToEngine(string moves, short time)
-        {
-            var command = UciCommands.position + moves;
-            engine.SendCommand(command);
-            command = UciCommands.go_movetime + " " + time.ToString();
-            engine.SendCommand(command);
-        }
-
-        private ChessPiece GetPieceAt(PartialMove position)
-        {
-            return BoardItems.OfType<ChessPiece>().
-                            Where(p => p.Rank == position.Rank && p.File == position.File).FirstOrDefault();
-        }
-
-        private BoardSquare GetSquareAt(PartialMove position)
-        {
-            return BoardItems.OfType<BoardSquare>().
-                            Where(p => p.Rank == position.Rank && p.File == position.File).FirstOrDefault();
+            Engine.SendMoves(Moves.ToString() + " " + move, Engine.MoveValidationTime);
         }
         #endregion
 
@@ -411,7 +373,7 @@ namespace RoboChess
             set => Set(ref _messageHeader, value);
         }
 
-        private void NewMessage(string header, string message)
+        internal void NewMessage(string header, string message)
         {
             Message = message;
             MessageHeader = header;
@@ -444,6 +406,13 @@ namespace RoboChess
             set => Set(ref _cameraConnected, value);
         }
 
+        private bool _moxaConnected;
+        public bool MoxaConnected
+        {
+            get => _moxaConnected;
+            set => Set(ref _moxaConnected, value);
+        }
+
         private bool _serverIsOn;
         public bool ServerIsOn
         {
@@ -458,21 +427,19 @@ namespace RoboChess
             set => Set(ref _tcpPort, value);
         }
 
-        private void UpdateConnectionStatus(bool startNewGame = true)
+        internal void UpdateConnectionStatus(bool startNewGame = true)
         {
             CameraConnected = Camera != null && Camera.Connected;
             RobotConnected = Robot != null && Robot.Connected;
             CanStartGame = CameraConnected && RobotConnected;
             if (CanStartGame && startNewGame) NewGame();
-        }   
+        }
 
+        public Engine Engine;
+        public Moxa Moxa;
         public TcpListener Server;
-        public TcpClient Robot;
-        public StreamWriter RobotWriter;
-        public StreamReader RobotReader;
-        public TcpClient Camera;
-        public StreamWriter CameraWriter;
-        public StreamReader CameraReader;
+        public Robot Robot;
+        public Camera Camera;
         public IPAddress Address = IPAddress.Parse("10.2.10.1");
         public bool exitWaitForPlayer;
 
@@ -533,121 +500,39 @@ namespace RoboChess
             var message = reader.ReadLine();
             if (message.Contains("Camera"))
             {
-                Camera = client;
-                CameraReader = reader;
-                CameraWriter = writer;
+                Camera = new Camera(client, reader, writer);
                 Task.Run(() => ListenToCamera());
-                UpdateConnectionStatus();
             }
-            else if (message.Contains("R,"))
+            else if (message.Contains("Robot"))
             {
-                Robot = client;
-                RobotReader = reader;
-                RobotWriter = writer;
+                Robot = new Robot(client, reader, writer);
                 Task.Run(() => ListenToRobot());
-                UpdateConnectionStatus();              
             }
+            UpdateConnectionStatus();
         }
 
         private void ListenToCamera()
-        {
+        {           
             while (true)
             {
-                string message = "";
+                var partialMoves = Camera.ReadLine();
+                if (!Camera.Connected) break;
+                if (partialMoves == null || !partialMoves.Any()) continue;
+
                 try
                 {
-                    message = CameraReader.ReadLine();
+                    var move = Camera.GetMoveFromPartialMoves(partialMoves, BoardItems, PlayerIsWhite ? PieceColor.White : PieceColor.Black);
+                    if (move == null) SubmitError();
+                    else PlayerMove = move;
                 }
                 catch
-                {
-                    //camera read error or the connection was reset
+                {                 
+                    SubmitError();
+                    //Camera read error or the connection was reset
                     if (!Camera.Connected) break;
-                    continue;
-                }
-
-                if (message.Contains("reset")) continue;
-                var m = 0;
-                var partialMoves = new List<PartialMove>();
-                var substrings = message.Trim(new char[] { '(', ')' }).Split(',');
-                for(var i = 1; i < substrings.Count(); i++)
-                {
-                    var partial = substrings[i];
-                    if (partial.Equals("#ERR") || partial.Equals("n")) continue;
-                    else if (partialMoves.Any(p => p.Text.Equals(partial))) continue; //duplicate
-                    partialMoves.Add(new PartialMove(partial));
-                    m++;
-                }
-
-                try
-                {
-                    if (m == 4)
-                    {
-                        var move = "";
-                        //There are only four possible castling moves: e1g1, e1c1, e8g8, and e8c8
-                        if (PlayerIsWhite && message.Contains("e1"))
-                        {
-                            if (message.Contains("g1")) move = "e1g1";
-                            else if (message.Contains("c1")) move = "e1c1";
-                        }
-                        else if (message.Contains("e8"))
-                        {
-                            if (message.Contains("g8")) move = "e8g8";
-                            else if (message.Contains("c8")) move = "e8c8";
-                        }
-
-                        //If the move is a valid castling move, great!
-                        //Otherwise, assume the there is noise and just use the first two potential moves, 
-                        //since the detected blobs are listing in order of area
-                        if (move.Length == 4)
-                        {
-                            PlayerMove = move;
-                            continue;
-                        }
-                    }
-                    //Else if m == 2, OR 3, OR was just changed to 2 in the if statement above
-                    //If m = 3 or 4, we are assuming that the third (and fourth) substring are noise.
-                    if (m > 1)
-                    {
-                        var move = new Move(partialMoves[0], partialMoves[1]);
-                        var selectedPiece = GetPieceAt(move.From);
-                        //If the piece is valid and the same color as the player, then the order of the move is correct
-                        //otherwise, try the move the other way around
-                        if (selectedPiece == null || selectedPiece.Color == PieceColor.White != PlayerIsWhite)
-                        {
-                            move = new Move(partialMoves[1], partialMoves[0]);
-                            selectedPiece = GetPieceAt(move.From);
-                        }
-                        //Check if valid move was found
-                        if (selectedPiece != null && selectedPiece.Color == PieceColor.White == PlayerIsWhite)
-                        {
-                            if (selectedPiece.Piece == PieceType.Pawn)
-                            {
-                                //Check for promotion. We need to add a q to the end if it is.
-                                move.IsPromotion = (PlayerIsWhite && move.To.Rank == 8) || (!PlayerIsWhite && move.To.Rank == 1);
-                            }
-                            PlayerMove = move.Text;
-                            continue;
-                        }
-                    }
-                    //The camera has not found a valid move if it gets this far.
-                    AddToLog("Camera error");
-                    NewMessage("Camera Error", "Camera could not identify player move. Please (1) reset the pieces, (2) press the yellow reset button, and (3) make the move again.");
-                    IsPlayerMove = true;
-                }
-                catch
-                {
-                    //The camera has not found a valid move if it gets this far.
-                    AddToLog("Camera error");
-                    NewMessage("Camera Error", "Camera could not identify player move. Please (1) reset the pieces, (2) press the yellow reset button, and (3) make the move again.");
-                    IsPlayerMove = true;
                 }
             }
-            UpdateConnectionStatus(false);
-        }
-
-        private void ResetCamera()
-        {
-            CameraWriter.WriteLine("0");
+            UpdateConnectionStatus(false);  
         }
 
         private void ListenToRobot()
@@ -657,115 +542,25 @@ namespace RoboChess
                 string message;
                 try
                 {
-                    message = RobotReader.ReadLine();
-                    if (message == null) throw new Exception();
-                    if (message.Contains("completed")) RobotIsMoving = false;
+                    message = Robot.ReadLine();
                 }
                 catch
                 {
                     //Robot read error or the connection was reset
                     if (!Robot.Connected) break;
-                    continue;
-                }       
+                }
             }
             UpdateConnectionStatus(false);
         }
-        #endregion
 
-        #region Moxa 
-        private bool _moxaConnected;
-        public bool MoxaConnected
+        private void SubmitError()
         {
-            get => _moxaConnected;
-            set => Set(ref _moxaConnected, value);
+            //The camera has not found a valid move if it gets this far.
+            AddToLog("Camera error");
+            NewMessage("Camera Error", "Camera could not identify player move. Please (1) reset the pieces, (2) press the yellow reset button, and (3) make the move again.");
+            IsPlayerMove = true;
         }
 
-        private ModbusClient ModbusClient;
-        private ModbusServer ModbusServer;
-
-        private void ConnectToMoxa()
-        {
-            ModbusServer = new ModbusServer() { Port = 502 };
-            ModbusClient = new ModbusClient() { Port = 502, IPAddress = "10.2.10.15" };
-            ModbusServer.Listen();
-            ModbusClient.Connect();
-            RedLight(true);
-            GreenLight(false);
-        }
-
-        private void OpenGripper()
-        {
-            var complete = false;
-            while (!complete)
-            {
-                try
-                {
-                    ModbusClient.Connect();
-                    ModbusClient.WriteSingleCoil(0, false);
-                    Task.Delay(200).Wait();
-                    complete = true;
-                    ModbusClient.Disconnect();
-                }
-                catch
-                {
-                }
-            }
-        }
-
-        private void CloseGripper()
-        {
-            var complete = false;
-            while (!complete)
-            {
-                try
-                {
-                    ModbusClient.Connect();
-                    ModbusClient.WriteSingleCoil(0, true);
-                    Task.Delay(500).Wait();
-                    complete = true;
-                    ModbusClient.Disconnect();
-                }
-                catch
-                {
-                }
-            }
-        }
-
-        private void RedLight(bool turnOn)
-        {
-            var complete = false;
-            while (!complete)
-            {
-                try
-                {
-                    ModbusClient.Connect();
-                    ModbusClient.WriteSingleCoil(1, turnOn);
-                    complete = true;
-                    ModbusClient.Disconnect();
-                }
-                catch
-                {
-                }
-            }    
-        }
-
-        private void GreenLight(bool turnOn)
-        {
-            var complete = false;
-            while (!complete)
-            {
-                try
-                {
-                    ModbusClient.Connect();
-                    ModbusClient.WriteSingleCoil(2, turnOn);
-                    complete = true;
-                    ModbusClient.Disconnect();
-                }
-                catch
-                {
-                }
-            }
-        }
 
         private void WaitForPlayer()
         {
@@ -775,20 +570,18 @@ namespace RoboChess
                 bool[] inputs;
                 try
                 {
-                    ModbusClient.Connect();
-                    inputs = ModbusClient.ReadDiscreteInputs(0, 3);
-                    ModbusClient.Disconnect();
+                    inputs = Moxa.Read();
                 }
                 catch
                 {
                     //connection error or the connection has been reset
                     continue;
                 }
-  
+
                 if (inputs[0])
                 {
                     //Trigger the camera. The camera will then send the move to the engine.
-                    CameraWriter.WriteLine("1");
+                    Camera.Trigger();
                     AddToLog("Player move submitted. Triggering camera.");
                     return;
                 }
@@ -801,56 +594,30 @@ namespace RoboChess
                 }
                 if (inputs[2])
                 {
-                    ResetCamera();
+                    Camera.Reset();
                     AddToLog("Camera reset.");
                 }
             }
         }
         #endregion
 
-        #region Moving the Robot
-        private RobotBoardRotation BoardRotation;
-
-        public void MovePiece(Move move)
+        #region Sending chess moves to the robot
+        private void MovePiece(Move move)
         {
-            MoveRobot(move.From);
+            Robot.Move(move.From);
             PickupPiece();
-            MoveRobot(move.To);
+            Robot.Move(move.To);
             DropOffPiece();
         }
 
-        public void CapturePiece(Move move)
+        private void CapturePiece(Move move)
         {
             //Remove the captured piece
-            MoveRobot(move.To);
+            Robot.Move(move.To);
             PickupPiece();
             DropOffTakenPiece();
             //And then move the engine piece
             MovePiece(move);
-        }
-
-        private void DropOffPiece()
-        {
-            LowerArm();
-            OpenGripper();
-            RaiseArm();
-        }
-
-        private void DropOffTakenPiece()
-        {
-            //Move the arm to the from location
-            GoToCapturedPieces();
-            LowerArm();
-            OpenGripper();
-            RaiseArm();
-        }
-
-        private void PickupPiece()
-        {
-            OpenGripper();//Technically, it should already be open
-            LowerArm();
-            CloseGripper();
-            RaiseArm();
         }
 
         private void Promotion(Move move, bool isCapture)
@@ -858,21 +625,21 @@ namespace RoboChess
             if (isCapture)
             {
                 //Remove the captured piece before completing the promotion
-                MoveRobot(move.To);
+                Robot.Move(move.To);
                 PickupPiece();
                 DropOffTakenPiece();
             }
 
             //Move the queen to the move.To position
-            MoveRobotToExtraQueenPosition();
+            Robot.MoveToExtraQueenPosition();
             PickupPiece();
-            MoveRobot(move.To);
+            Robot.Move(move.To);
             DropOffPiece();
 
             //Now move the pawn off the board over to the queen position
-            MoveRobot(move.From);
+            Robot.Move(move.From);
             PickupPiece();
-            MoveRobotToExtraQueenPosition();
+            Robot.MoveToExtraQueenPosition();
             DropOffPiece();
         }
 
@@ -883,79 +650,35 @@ namespace RoboChess
 
             //then remove the captured pawn                            
             var capturedPawnLocation = new PartialMove(move.To.File + move.From.Rank.ToString());
-            MoveRobot(capturedPawnLocation);
+            Robot.Move(capturedPawnLocation);
             PickupPiece();
             DropOffTakenPiece();
         }
 
-        private void MoveRobot(PartialMove move)
+        private void DropOffPiece()
         {
-            RobotIsMoving = true;
-            RobotWriter.WriteLine("1," + BoardRotation.X(move) + "," + BoardRotation.Y(move));
-            WaitForRobot();
-        }
-
-        private void MoveRobotToExtraQueenPosition()
-        {
-            RobotIsMoving = true;
-            RobotWriter.WriteLine("5");
-            WaitForRobot();
-        }
-
-        private void LowerArm()
-        {
-            RobotIsMoving = true;
-            RobotWriter.WriteLine("2");
-            WaitForRobot();
-        }
-
-        private void RaiseArm()
-        {
-            RobotIsMoving = true;
-            RobotWriter.WriteLine("3");
-            WaitForRobot();
+            Robot.LowerArm();
+            Moxa.OpenGripper();
+            Robot.RaiseArm();
         }
 
         private int numPlayerPiecesTaken = 0;
-        private void GoToCapturedPieces()
+        private void DropOffTakenPiece()
         {
+            //Move the arm to the from location
             numPlayerPiecesTaken++;
-            int robotOffsetY, robotOffsetX;
-            if (numPlayerPiecesTaken < 9)
-            {
-                robotOffsetX = numPlayerPiecesTaken - 1;
-                robotOffsetY = 0;
-            }
-            else
-            {
-                robotOffsetX = numPlayerPiecesTaken - 8 - 1;
-                robotOffsetY = 1;
-            }
-            RobotIsMoving = true;
-            RobotWriter.WriteLine("4," + robotOffsetX.ToString() + "," + robotOffsetY.ToString());
-            WaitForRobot();
+            Robot.GoToCapturedPieces(numPlayerPiecesTaken);
+            Robot.LowerArm();
+            Moxa.OpenGripper();
+            Robot.RaiseArm();
         }
 
-        private void ResetRobot()
+        private void PickupPiece()
         {
-            RobotIsMoving = true;
-            RobotWriter.Flush();
-            RobotWriter.WriteLine("0");
-            WaitForRobot();
-        }
-
-        private int robotsLongestSingleMoveInSeconds = 10;
-        private bool RobotIsMoving = false;
-        private void WaitForRobot()
-        {
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-            while (RobotIsMoving && stopWatch.Elapsed.TotalSeconds < robotsLongestSingleMoveInSeconds) { } //wait
-            if (stopWatch.Elapsed.TotalSeconds >= robotsLongestSingleMoveInSeconds)
-            {
-                RobotIsMoving = false;
-                AddToLog("Robot connection is bad. Try resetting the server.");
-            }
+            Moxa.OpenGripper();//Technically, it should already be open
+            Robot.LowerArm();
+            Moxa.CloseGripper();
+            Robot.RaiseArm();
         }
         #endregion
     }

@@ -8,5 +8,9 @@ namespace StockChessCS.Models
         public int Rank { get; set; }
         public char File { get; set; }
         public ChessBoardItem ItemType { get; set; }
+        public string Position()
+        {
+            return File + Rank.ToString();
+        }
     }
 }

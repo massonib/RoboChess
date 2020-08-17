@@ -96,11 +96,16 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Clients\Camera.cs" />
+    <Compile Include="Clients\Engine.cs" />
     <Compile Include="Helpers\AutoScroll.cs" />
     <Compile Include="Helpers\CommandWithNoCondition.cs" />
     <Compile Include="Converters\Converters.cs" />
+    <Compile Include="Helpers\GetItem.cs" />
     <Compile Include="Helpers\ViewModelLocator.cs" />
-    <Compile Include="RobotBoardRotation.cs" />
+    <Compile Include="Clients\Moxa.cs" />
+    <Compile Include="Clients\Robot.cs" />
+    <Compile Include="Helpers\RobotBoardRotation.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -124,7 +129,7 @@
     <Compile Include="MessageControl.xaml.cs">
       <DependentUpon>MessageControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Move.cs" />
+    <Compile Include="Helpers\Move.cs" />
     <Compile Include="Helpers\Observable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
