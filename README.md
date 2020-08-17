@@ -23,6 +23,7 @@ Robot Actions IDs. Once each action is complete, the robot should return "comple
 
 # Contributions
 Base of program from Meshack Musundi's StockChess project https://www.codeproject.com/Articles/1159746/StockChess
+
 KTM Research hardware and facilities https://ktmresearch.com/
 
 # License
